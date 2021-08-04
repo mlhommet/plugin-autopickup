@@ -1,5 +1,10 @@
 # Auto pick up Voice call
-This plugins directly connects agents to inbound calls by accepting the reservation and selecting the task. 
+This plugins:
+- allows to specify a condition to enable auto pickup
+- connects agents to inbound calls by accepting the reservation and selecting the task. It plays a BIP sound to the agent only to alert them of an incoming call
+- plays a custom ringtone on incoming calls (for agents that don't match the auto pickup condition)
+
+
 It is compatible with the outbound dialpad.
 
 Twilio Flex Plugins allow you to customize the appearance and behavior of [Twilio Flex](https://www.twilio.com/flex). If you want to learn more about the capabilities and how to use the API, check out our [Flex documentation](https://www.twilio.com/docs/flex).

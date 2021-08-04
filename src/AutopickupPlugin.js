@@ -25,6 +25,8 @@ export default class AutopickupPlugin extends FlexPlugin {
     return Promise.reject('Could not find Task or ReservationSid to accept.');
   };
 
+  autoPickup = (manager) => manager.workerClient.attributes["Membership"] === "Bluelink";
+  
   /**
    * This code is run when your plugin is being started
    * Use this to modify any UI components or attach to the actions framework
@@ -33,17 +35,41 @@ export default class AutopickupPlugin extends FlexPlugin {
    * @param manager { import('@twilio/flex-ui').Manager }
    */
   init(flex, manager) {
+    const resStatus = ["accepted","canceled","rejected","rescinded","timeout"];
+    let bipSound = "https://prune-porpoise-1444.twil.io/assets/mixkit-censorship-beep-1082.wav";
+    let ringSound = "https://bittersweet-fly-6115.twil.io/assets/mixkit-marimba-ringtone-1359.wav";
+    let mediaId;
+    
     this.registerReducers(manager);
 
-    //Pick-up the customer call automatically for voice channel
-		manager.workerClient.on("reservationCreated", reservation => {
-      var channel = reservation.task.taskChannelUniqueName.toLowerCase();
-      // Autopickup for inbound calls only - this conflicts with the outbound call plugin
-      if (channel === 'voice' && reservation.task.attributes.direction === 'inbound') {
-        this.acceptAndSelectTaskAction(flex,reservation);
-      }
-    });
+    manager.workerClient.on("reservationCreated", reservation => {
 
+      // Autopickup for inbound calls only - this conflicts with the outbound call plugin
+      if (reservation.task.taskChannelUniqueName.toLowerCase() === 'voice' && reservation.task.attributes.direction === 'inbound') {
+        mediaId = flex.AudioPlayerManager.play({
+          url: this.autoPickup(manager) ? bipSound : ringSound,
+          repeatable: this.autoPickup(manager) ? false : true
+        },
+        (error) => {
+          //handle error
+          console.log("ERROR", error);
+        }
+        );
+        // Autopickup for bluelink agents
+        if (this.autoPickup(manager)){
+          // use a timeout to ensure the bip is done playing when the conversation starts
+          setTimeout(()=> {
+            this.acceptAndSelectTaskAction(flex, reservation);
+          }, 1000);
+        }
+      }
+
+      resStatus.forEach( (e)=>{
+        reservation.on(e,()=>{
+          flex.AudioPlayerManager.stop(mediaId);
+        })
+      })
+    });
   }
 
   /**
